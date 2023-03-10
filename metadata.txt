@@ -1,0 +1,47 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Extractor
+qgisMinimumVersion=3.0
+description=Extraction tool to extract values from raster in many way
+version=0.1
+author=Stanislas Mahussi GANDAHO
+email=gandahostanmah@gmail.com
+
+about=Extractor allow to extract raster value (temperature, moisture, rainfull, normalized vegetation index, etc.) from points, lines and polygons on single and multiple raster.
+
+tracker=https://github.com/stangandaho/Extractor/issues
+repository=https://github.com/stangandaho/Extractor
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=analysis, csv, database, ecology, geometry, landsat, layers, line, point, polygon, polyline, remote sensing, shapefile, statistics, table, vector
+
+homepage=https://github.com/stangandaho/Extractor/issues
+category=Raster
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
