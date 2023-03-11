@@ -332,6 +332,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         if not vector_path and self.VectorType.currentText() == "Point" and self.MultipleRasterCheck.isChecked():
             missed_vector_path()
             return
+        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(self.vector_file_path(self.PathToVectorFile)):
+            no_folder()
+            return
         elif not folder_path and self.VectorType.currentText() == "Point" and self.MultipleRasterCheck.isChecked():
             no_folder()
             return
@@ -557,6 +560,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         if not vector_path and self.VectorType.currentText() == "Line" and self.MultipleRasterCheck.isChecked():
             missed_vector_path()
             return
+        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(self.vector_file_path(self.PathToVectorFile)):
+            no_folder()
+            return
         elif not folder_path and self.VectorType.currentText() == "Line" and self.MultipleRasterCheck.isChecked():
             no_folder()
             return
@@ -673,6 +679,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             pass
         if not vector_path and self.VectorType.currentText() == "Polygon" and self.MultipleRasterCheck.isChecked():
             missed_vector_path()
+            return
+        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(self.vector_file_path(self.PathToVectorFile)):
+            no_folder()
             return
         elif not folder_path and self.VectorType.currentText() == "Polygon" and self.MultipleRasterCheck.isChecked():
             no_folder()
@@ -873,8 +882,8 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                 feature_name = geometry.GetGeometryName()
             return str(feature_name)
         
-        ##
-   
+    
+
     def groupby_agg(self, df, group_cols, value_col, funcs):
         funcs_dict = {
                 'count': pd.Series.count,
