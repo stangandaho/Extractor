@@ -83,8 +83,8 @@ def not_line(): # Both Raster and Vector no provided and Checbox not checked and
     msgBox.setStandardButtons(QMessageBox.Ok)
     msgBox.exec()
 
-# HANDLE EMPTY FOLDER PATH
-def no_folder(): # Both Raster and Vector no provided and Checbox not checked and Combobox not selected
+# HANDLE FOLDER PATH
+def no_folder(): # 
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Critical)
     msgBox.setText("You must provide the folder")
