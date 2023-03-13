@@ -30,13 +30,10 @@ from qgis.core import QgsTask, QgsApplication, QgsVectorLayer, QgsRasterLayer, Q
 
 from PyQt5.QtCore import Qt
 from osgeo import gdal, ogr, osr
-## zonal stat
-import rasterio, glob, copy
-import geopandas as gpd
-from rasterstats import zonal_stats
-## end zonal
+
 import pandas as pd
 import numpy as np
+from .Zonal_stats import zonal_data, groupby_agg
 from .DialogMessage import missed_raster_vector, missed_raster_path, missed_vector_path, Unoverlable
 from .DialogMessage import not_point, not_polygon, not_line, empty_folder, no_folder, is_directory, no_stat
 from .TaskManager import TaskManager
@@ -249,7 +246,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             # Convert the list to a pandas data frame
             RasterDf = pd.DataFrame(lons_lats_vals, columns=["longitude", "latitude", "value"])
             RasterDf = RasterDf[~np.isinf(RasterDf['value'])]
-            RasterDf['value'] = np.round(RasterDf['value'], 3)
+            RasterDf['value'] = RasterDf['value']
             df = RasterDf.reset_index()
             del df["index"]
             df.index += 1
@@ -359,6 +356,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                 raster_src = osr.SpatialReference()
                 raster_src.ImportFromWkt(proj)
                 transform = osr.CoordinateTransformation(vector_srs, raster_src)
+                if "None" in str(transform):
+                    Unoverlable()
+                    return
                 # loop through tif files in folder
                 for feature in layer:
                     ID = feature.GetField(self.field_choosed())
@@ -410,32 +410,10 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             no_stat()
             return
         else:
-            shp = gpd.read_file(vector_path)
-            # create empty dataframe for output
-            output = pd.DataFrame()
-            # loop through tif files in folder
-            # open raster file
-            r = rasterio.open(file_path)
-            # get CRS of raster file
-            r_crs = r.crs
-            # transform shapefile geometries to match CRS of raster file
-            shp = shp.to_crs(r_crs)
-            # perform zonal statistics on raster based on shapefile geometries
-            stat_name.insert(0, self.field_choosed())
-            stats = zonal_stats(shp.geometry.values,
-                                r.read(1),
-                                affine=r.transform,
-                                stats= self.stats_choosed())
-            # convert list of dictionaries to dataframe
-            stats_df = pd.DataFrame(stats)
-            # add area column with values from zone column of shapefile attribute table
-            stats_df[self.field_choosed()] = shp[self.field_choosed()].values 
-            # append stats dataframe to output dataframe 
-            output = output.append(stats_df)
-            output = pd.DataFrame(output)
-            output = output.reindex(columns = stat_name)
-            output.index += 1
-            return output
+            out_df = zonal_data(file_path, vector_path)
+            agg_df = groupby_agg(df=out_df, group_cols="name", value_col="value", funcs=stat_name)
+            agg_df.rename(columns={'name': self.field_choosed()}, inplace=True)
+            return agg_df
     
     # RASTER AND LINE
     def raster_line(self):
@@ -470,6 +448,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             vector_srs = layer.GetSpatialRef()
 
             transform = osr.CoordinateTransformation(vector_srs, raster_src)
+            if "None" in str(transform):
+                Unoverlable()
+                return
             # Initialize an empty list to store the extracted values
             values = []
             # Loop through the features in the input vector layer and extract the values along each feature
@@ -526,6 +507,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             vector_srs = layer.GetSpatialRef()
 
             transform = osr.CoordinateTransformation(vector_srs, raster_src)
+            if "None" in str(transform):
+                Unoverlable()
+                return
             # Initialize an empty list to store the extracted values
             values = []
             stat_name = self.stats_choosed()
@@ -592,6 +576,9 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                 raster_src = osr.SpatialReference()
                 raster_src.ImportFromWkt(proj)
                 transform = osr.CoordinateTransformation(vector_srs, raster_src)
+                if "None" in str(transform):
+                    Unoverlable()
+                    return
             # loop through tif files in folder
                 for feature in layer:
                     ID = feature.GetField(self.field_choosed())
@@ -631,40 +618,8 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             not_polygon()
             return
         else:
-            # open shapefile as geodataframe
-            shp = gpd.read_file(vector_path)
-            # create empty dataframe for output
-            output = pd.DataFrame()
-            # loop through tif files in folder
-            # open raster file
-            r = rasterio.open(file_path)
-            # get CRS of raster file
-            r_crs = r.crs
-            # transform shapefile geometries to match CRS of raster file
-            shp = shp.to_crs(r_crs)
-            # perform zonal statistics on raster based on shapefile geometries
-            stats = zonal_stats(shp.geometry.values,
-                                r.read(1),
-                                affine=r.transform,
-                                add_stats={"values": lambda x: x.compressed()})
-            # convert list of dictionaries to dataframe
-            stats_df = pd.DataFrame(stats)
-            # add area column with values from zone column of shapefile attribute table
-            stats_df["area"] = shp[self.field_choosed()].values 
-            # append stats dataframe to output dataframe 
-            output = output.append(stats_df)
-            # select needed column
-            pre_df = output[{"area", "values"}]
-            data = []
-            for h in range(pre_df[{"values"}].shape[1]):
-                for j in range(pre_df[{"area"}].shape[0]):
-                    name = pre_df[{"area"}].iloc[j, 0]
-                    value = pre_df[{"values"}].iloc[j, h]
-                    for item in value:              
-                        data.append({self.field_choosed():name, "value":item})
-                df = pd.DataFrame(data)
-                df.index += 1
-                return df    
+            out_df = zonal_data(file_path, vector_path)
+            return out_df
 
     # MULTIPLE ZONAL STATS
     def mult_zonal_stat(self):
@@ -672,7 +627,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         vector_path = r"{}".format(self.vector_file_path(self.PathToVectorFile))
         stat_name = self.stats_choosed()
         # create empty dataframe for output
-        output = pd.DataFrame()
+        output_list = []
         try:
             tiff_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith(('.tif', '.TIF', '.TIFF', '.tiff'))]
         except:
@@ -680,10 +635,8 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         if not vector_path and self.VectorType.currentText() == "Polygon" and self.MultipleRasterCheck.isChecked():
             missed_vector_path()
             return
-        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(self.vector_file_path(self.PathToVectorFile)):
-            no_folder()
-            return
-        elif not folder_path and self.VectorType.currentText() == "Polygon" and self.MultipleRasterCheck.isChecked():
+
+        elif not os.path.isdir(folder_path) and self.VectorType.currentText() == "Polygon" and self.MultipleRasterCheck.isChecked():
             no_folder()
             return
         elif len(tiff_files) == 0:
@@ -691,9 +644,6 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             return
         elif self.handle_shp_feature_type_error() != "POLYGON" and self.handle_shp_feature_type_error() != "MULTIPOLYGON":
             not_polygon()
-            return
-        elif not folder_path and self.MultipleRasterCheck.isChecked():
-            no_folder()
             return
         elif len(tiff_files) == 0:
             empty_folder()
@@ -703,32 +653,16 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             return
         else:
             # open shapefile as geodataframe
-            shp = gpd.read_file(vector_path)
             for file in tiff_files:
-                # open raster file
-                r = rasterio.open(file)
-                # get CRS of raster file
-                r_crs = r.crs
-                # transform shapefile geometries to match CRS of raster file
-                shp = shp.to_crs(r_crs)
                 # get name of raster file without extension
-                name = os.path.splitext(os.path.basename(file))[0]
-                # perform zonal statistics on raster based on shapefile geometries
-                stats = zonal_stats(shp.geometry.values,
-                                    r.read(1),
-                                    affine = r.transform,
-                                    stats = stat_name)
-                # convert list of dictionaries to dataframe
-                stats_df = pd.DataFrame(stats)
-                # add name column with raster file name
-                stats_df["source"] = name
-                # add area column with values from zone column of shapefile attribute table
-                stats_df[self.field_choosed()] = shp[self.field_choosed()].values 
-                # append stats dataframe to output dataframe 
-                output = output.append(stats_df)
-                cols = output.columns.tolist()
-                cols = ['source', self.field_choosed()] + [c for c in cols if c not in ['source', self.field_choosed()]]
-                output = output[cols]
+                source = os.path.splitext(os.path.basename(file))[0]
+                out_df = zonal_data(file, vector_path)
+                agg_df = groupby_agg(df=out_df, group_cols="name", value_col="value", funcs=stat_name)
+                agg_df["source"] = source
+                output_list.append(agg_df)
+            output = pd.concat(output_list, ignore_index=True)
+            output.rename(columns={'name': self.field_choosed()}, inplace=True)
+            output.insert(0, "source", output.pop("source"))
             return output
     
     # CLEAR TABLE FUNCTION 
@@ -884,7 +818,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         
     
 
-    def groupby_agg(self, df, group_cols, value_col, funcs):
+    def groupby_agg(df, group_cols, value_col, funcs):
         funcs_dict = {
                 'count': pd.Series.count,
                 'min': pd.Series.min,
@@ -910,19 +844,5 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         return out_df
 
 
-# Create an instance of the main class and call the run_task() method
 
-
-
-
-###################################################################################################
-import subprocess
-import sys
-# List the required libraries
-required_libraries = ['rasterstats', 'rasterio']
-# Check if each library is installed, and if not, install it using pip
-for library in required_libraries:
-    try:
-        __import__(library)
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", library])
+#####################

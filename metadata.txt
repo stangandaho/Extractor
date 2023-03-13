@@ -6,7 +6,7 @@
 name=Extractor
 qgisMinimumVersion=3.0
 description=Extraction tool to extract values from raster in many way
-version=0.1
+version=0.2
 author=Stanislas Mahussi GANDAHO
 email=gandahostanmah@gmail.com
 
