@@ -329,10 +329,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         if not vector_path and self.VectorType.currentText() == "Point" and self.MultipleRasterCheck.isChecked():
             missed_vector_path()
             return
-        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(self.vector_file_path(self.PathToVectorFile)):
-            no_folder()
-            return
-        elif not folder_path and self.VectorType.currentText() == "Point" and self.MultipleRasterCheck.isChecked():
+        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(folder_path):
             no_folder()
             return
         elif len(tiff_files) == 0:
@@ -528,7 +525,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                     values.append({self.field_choosed().lower():feature.GetField(self.field_choosed()),
                                    "val": float(value)})
             result_df = pd.DataFrame(values)
-            df = self.groupby_agg(df = result_df, group_cols= self.field_choosed().lower(), value_col = "val", funcs = stat_name)
+            df = groupby_agg(df = result_df, group_cols= self.field_choosed().lower(), value_col = "val", funcs = stat_name)
             return df
 
    # MULTI RASTER AND LINE STATS
@@ -544,10 +541,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         if not vector_path and self.VectorType.currentText() == "Line" and self.MultipleRasterCheck.isChecked():
             missed_vector_path()
             return
-        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(self.vector_file_path(self.PathToVectorFile)):
-            no_folder()
-            return
-        elif not folder_path and self.VectorType.currentText() == "Line" and self.MultipleRasterCheck.isChecked():
+        elif self.MultipleRasterCheck.isChecked() and not os.path.isdir(folder_path):
             no_folder()
             return
         elif len(tiff_files) == 0:
@@ -595,7 +589,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                         values.append({"source":name, self.field_choosed():ID, "values": value})
             # Create a Pandas DataFrame to store the extracted values
             result_df = pd.DataFrame(values)
-            df = self.groupby_agg(df = result_df, group_cols = ["source", self.field_choosed()], value_col = "values", funcs = stat_name)
+            df = groupby_agg(df = result_df, group_cols = ["source", self.field_choosed()], value_col = "values", funcs = stat_name)
             return df
  
     # WHOLE DATA
@@ -818,30 +812,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         
     
 
-    def groupby_agg(df, group_cols, value_col, funcs):
-        funcs_dict = {
-                'count': pd.Series.count,
-                'min': pd.Series.min,
-                'max': pd.Series.max,
-                'mean': pd.Series.mean,
-                'sum': pd.Series.sum,
-                'std': pd.Series.std,
-                'median': pd.Series.median,
-                'majority': lambda x: x.mode().iloc[0] if not x.empty else np.nan,
-                'minority': lambda x: x.value_counts().index[-1] if not x.empty else np.nan,
-                'unique': pd.Series.nunique,
-                'range': lambda x: x.max() - x.min(),
-                'nodata': lambda x: x.isnull().sum(),
-                'nan': lambda x: x.isna().sum(),
-            }
-        agg_funcs = [funcs_dict[func] for func in funcs]
-        agg_func_names = [func for func in funcs]
-        agg_func_dict = dict(zip(agg_func_names, agg_funcs))
-        result_df = df.groupby(group_cols)[value_col].agg(agg_funcs)
-        result_df.columns = [f"{func}" for func in agg_func_names]
-        out_df = result_df.reset_index()
-        out_df.index += 1
-        return out_df
+
 
 
 
