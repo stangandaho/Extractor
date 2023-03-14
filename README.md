@@ -1,16 +1,11 @@
-<<<<<<< HEAD
-# Extractor
-Extractor QGIS plugin provides a valuable tool for extracting data from raster layers using point, line, and polygon vector features. By incorporating zonal statistics calculations, the plugin allows users to perform complex spatial analyses and generate informative output.
-=======
+
+
 ## Description
 **Extractor** QGIS plugin provides a valuable tool for extracting data from raster layers using point, line, and polygon vector features. By incorporating zonal statistics calculations, the plugin allows users to perform complex spatial analyses and generate informative output.
->>>>>>> dc54ba16cebc88aba373ba33f8ddcf1d1f999420
 
 One important application of this plugin is in time series analysis, where users may need to extract data from multiple raster layers to track changes over time. For example, researchers studying changes in land use patterns may use your plugin to extract data on vegetation cover, urbanization, or other variables of interest at different time points, and then analyze and compare these data to identify trends and patterns.
 
 Another important application of this plugin is in landscape studies, where users may need to extract data on environmental variables such as elevation, slope, or soil properties from raster layers, and then analyze these data to understand patterns of biodiversity, ecosystem function, or other landscape-scale processes. With the ability to extract data from multiple raster layers using point, line, and polygon features, **Extractor** provides a powerful tool for conducting these types of analyses.
-<<<<<<< HEAD
-=======
 
 ## installation
 The installation of the plugin is done as usual from the QGIS plugin repository. In the Plugins menu, go to All tab. In the search bar, type 'Extractor' and click on Install. After the installation, the Extractor will appear in the Raster Menu of QGIS and in toolbar as shown in the image below. Click on it to go to the Extractor interface.
@@ -43,4 +38,3 @@ For wrong settings during extraction, error dialogues appear to inform what is m
 
 ## Credits
 The icons used in this plugin were sourced from SVG Repo (https://www.svgrepo.com/), created by SVG Repo LLC and licensed under GNU GPL license.
->>>>>>> dc54ba16cebc88aba373ba33f8ddcf1d1f999420
