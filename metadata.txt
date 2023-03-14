@@ -6,7 +6,7 @@
 name=Extractor
 qgisMinimumVersion=3.0
 description=Extraction tool to extract values from raster in many way
-version=0.2
+version=0.21.1
 author=Stanislas Mahussi GANDAHO
 email=gandahostanmah@gmail.com
 
@@ -23,10 +23,10 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=analysis, csv, database, ecology, geometry, landsat, layers, line, point, polygon, polyline, remote sensing, shapefile, statistics, table, vector
+tags=analysis, csv, database, ecology, geometry, layers, line, point, polygon, polyline, shapefile, statistics, table, vector, time series
 
 homepage=https://github.com/stangandaho/Extractor/issues
-category=Raster
+category=Vector
 icon=icon.png
 # experimental flag
 experimental=False

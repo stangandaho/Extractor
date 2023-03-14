@@ -134,7 +134,7 @@ class Extractor:
         """
 
         icon = QIcon(icon_path)
-        action = QAction(icon, text, parent)
+        action = QAction(icon, "Extractor", parent)
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
 
