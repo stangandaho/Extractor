@@ -6,7 +6,7 @@
 name=Extractor
 qgisMinimumVersion=3.14.0
 description=Extractor allows for the extraction of data from raster images based on point, line, and polygon vectors and the application of zonal statistics. Its usefulness lies in its ability to work with a range of raster sources, making it ideal for time series analysis and landscape studies.
-version=1.1
+version=1.2
 author=Stanislas Mahussi GANDAHO
 email=gandahostanmah@gmail.com
 
