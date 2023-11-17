@@ -20,7 +20,20 @@ repository=https://github.com/stangandaho/Extractor
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
+
 # changelog=
+
+1.2
+- Add feature for extraction with point from csv file
+
+1.1
+- Some bugs fixed and tooltip added
+
+1.0
+- Fix Extraction process during data saving
+
+0.21.1
+- Add kmz/KMZ, kml/KML support
 
 # Tags are comma separated with spaces allowed
 tags=analysis, csv, ecology, layers, line, point, polygon, shapefile, statistics, table, vector, time series
