@@ -26,27 +26,27 @@ import os
 from qgis.PyQt import uic, QtWidgets
 ## my own import
 from qgis.gui import QgsFileWidget, QgsCheckableComboBox
-from qgis.core import QgsTask, QgsApplication, QgsVectorLayer, QgsRasterLayer, QgsProject
+from qgis.core import QgsVectorLayer, QgsRasterLayer, QgsProject
+from qgis.utils import iface
 
 from PyQt5.QtCore import Qt
 from osgeo import gdal, ogr, osr
 
 import pandas as pd
 import numpy as np
-from .Zonal_stats import zonal_data, groupby_agg
-from .AddDelim import Delim
-from .DialogMessage import (missed_raster_vector, missed_raster_path, missed_vector_path, Unoverlable,
+from .src.Zonal_stats import zonal_data, groupby_agg
+from .src.AddDelim import Delim
+from .src.DialogMessage import (missed_raster_vector, missed_raster_path, missed_vector_path, Unoverlable,
 not_point, not_polygon, not_line, empty_folder, no_folder, is_directory, no_stat)
-from .TaskManager import TaskManager
+# Declare file path and extension
 file_path = folder_path = ""
 rast_ext = ('.tif', '.TIF', '.TIFF', '.tiff')
 ### Pandas model ###
-from .PandasModel import PandasModel
+from .src.PandasModel import PandasModel
 
-# This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
+# Loads .ui file that PyQt can populate from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'Extractor_dialog_base.ui'))
-
 
 class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
@@ -59,6 +59,8 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
         self.setWindowFlags(Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint)
+        qgis_font = iface.mainWindow().font() 
+        self.setFont(qgis_font)
         ## set diferent path acess
         self.SingleRasterCheck.stateChanged.connect(lambda: self.PathToFile.setEnabled(self.SingleRasterCheck.isChecked()))
         self.MultipleRasterCheck.stateChanged.connect(lambda: self.PathToFile.setEnabled(self.MultipleRasterCheck.isChecked()))
@@ -295,34 +297,35 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                 Unoverlable()
                 return
             else:
-                for feature in layer:
-                    geometry = feature.GetGeometryRef()
-                    geometry.Transform(transformer)
+                try:
+                    for feature in layer:
+                        geometry = feature.GetGeometryRef()
+                        geometry.Transform(transformer)
 
-                    if geometry.GetGeometryName() == 'MULTIPOINT':
-                        for i in range(geometry.GetGeometryCount()):
-                            point = geometry.GetGeometryRef(i)
-                            x, y = point.GetX(), point.GetY()
+                        if geometry.GetGeometryName() == 'MULTIPOINT':
+                            for i in range(geometry.GetGeometryCount()):
+                                point = geometry.GetGeometryRef(i)
+                                x, y = point.GetX(), point.GetY()
+                                # Get the raster value for the point
+                                transform = raster_ds.GetGeoTransform()
+                                px = int((x - transform[0]) / transform[1])
+                                py = int((y - transform[3]) / transform[5])
+                                raster_band = raster_ds.GetRasterBand(1)
+                                raster_array = raster_band.ReadAsArray(px, py, 1, 1)[0,0]
+                                values.append((feature.GetField(self.field_chosen()), x, y, 
+                                            round(float(raster_array), 7)))
+                        else:
+                            x, y = geometry.GetX(), geometry.GetY()
                             # Get the raster value for the point
                             transform = raster_ds.GetGeoTransform()
                             px = int((x - transform[0]) / transform[1])
                             py = int((y - transform[3]) / transform[5])
                             raster_band = raster_ds.GetRasterBand(1)
                             raster_array = raster_band.ReadAsArray(px, py, 1, 1)[0,0]
-                            values.append((feature.GetField(self.field_chosen()), x, y, round(float(raster_array), 7)))
-                    else:
-                        x, y = geometry.GetX(), geometry.GetY()
-                        # Get the raster value for the point
-                        transform = raster_ds.GetGeoTransform()
-                        px = int((x - transform[0]) / transform[1])
-                        py = int((y - transform[3]) / transform[5])
-                        raster_band = raster_ds.GetRasterBand(1)
-                        try:
-                            raster_array = raster_band.ReadAsArray(px, py, 1, 1)[0,0]
-                            values.append((feature.GetField(self.field_chosen()), x, y, round(float(raster_array), 3)))
-                        except:
-                            Unoverlable()
-                            pass
+                            values.append((feature.GetField(self.field_chosen()), x, y, 
+                                        round(float(raster_array), 3)))
+                except:
+                    pass
                 df = pd.DataFrame(values, columns = [self.field_chosen(), "longitude", "latitude", "value"])
                 df.index += 1
                 return df
@@ -377,22 +380,26 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                     geom = feature.GetGeometryRef()
                     geom.Transform(transform)
 
-                    if geom.GetGeometryName() == 'MULTIPOINT':##----:
-                        for i in range(geom.GetGeometryCount()):
-                            point = geom.GetGeometryRef(i)
-                            x, y = point.GetX(), point.GetY()
-                            px = int((x - geo_transform[0]) / geo_transform[1])
-                            py = int((y - geo_transform[3]) / geo_transform[5])
-                            value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
-                            values.append({"source":name, self.field_chosen():ID, "values": value})
-                    else:
-                        point = np.array(geom.GetPoints())
-                        for i in range(len(point)):
-                            x, y = point[i]
-                            px = int((x - geo_transform[0]) / geo_transform[1])
-                            py = int((y - geo_transform[3]) / geo_transform[5])
-                            value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
-                            values.append({"source":name, self.field_chosen():ID, "values": value})
+                    try:
+                        if geom.GetGeometryName() == 'MULTIPOINT':
+                            for i in range(geom.GetGeometryCount()):
+                                point = geom.GetGeometryRef(i)
+                                x, y = point.GetX(), point.GetY()
+                                px = int((x - geo_transform[0]) / geo_transform[1])
+                                py = int((y - geo_transform[3]) / geo_transform[5])
+                                value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
+                                values.append({"source":name, self.field_chosen():ID, "values": value})
+                        else:
+                            point = np.array(geom.GetPoints())
+                            for i in range(len(point)):
+                                x, y = point[i]
+                                px = int((x - geo_transform[0]) / geo_transform[1])
+                                py = int((y - geo_transform[3]) / geo_transform[5])
+                                value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
+                                values.append({"source":name, self.field_chosen():ID, "values": value})
+                    except:
+                        pass
+
             self.extraction_progress.setValue(len(tiff_files))  # set progress bar to full
             # Create a Pandas DataFrame to store the extracted values
             df = pd.DataFrame(values)
@@ -484,18 +491,21 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             # Initialize an empty list to store the extracted values
             values = []
             # Loop through the features in the input vector layer and extract the values along each feature
-            for feature in layer:
-                geom = feature.GetGeometryRef()
-                geom.Transform(transform)
-                line = np.array(geom.GetPoints())
-                #print(line)
-                for i in range(len(line)):
-                    x, y = line[i]
-                    px = int((x - geo_transform[0]) / geo_transform[1])
-                    py = int((y - geo_transform[3]) / geo_transform[5])
-                    value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
-                    values.append({self.field_chosen():feature.GetField(self.field_chosen()),
-                                   "longitude":x, "latitude":y, "values": round(float(value), 3)})
+            try:
+                for feature in layer:
+                    geom = feature.GetGeometryRef()
+                    geom.Transform(transform)
+                    line = np.array(geom.GetPoints())
+                    #print(line)
+                    for i in range(len(line)):
+                        x, y = line[i]
+                        px = int((x - geo_transform[0]) / geo_transform[1])
+                        py = int((y - geo_transform[3]) / geo_transform[5])
+                        value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
+                        values.append({self.field_chosen():feature.GetField(self.field_chosen()),
+                                    "longitude":x, "latitude":y, "values": round(float(value), 3)})
+            except:
+                pass
             df = pd.DataFrame(values)
             df.index += 1
             return df
@@ -543,22 +553,25 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             # Initialize an empty list to store the extracted values
             values = []
             stat_name = self.stats_chosen()
-            #stat_name.insert(0, self.field_chosen())
             # Loop through the features in the input vector layer and extract the values along each feature
-            for feature in layer:
-                geom = feature.GetGeometryRef()
-                geom.Transform(transform)
-                line = np.array(geom.GetPoints())
-                #print(line)
-                for i in range(len(line)):
-                    x, y = line[i]
-                    px = int((x - geo_transform[0]) / geo_transform[1])
-                    py = int((y - geo_transform[3]) / geo_transform[5])
-                    value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
-                    values.append({self.field_chosen():feature.GetField(self.field_chosen()),
-                                   "val": float(value)})
+            try:
+                for feature in layer:
+                    geom = feature.GetGeometryRef()
+                    geom.Transform(transform)
+                    line = np.array(geom.GetPoints())
+                    #print(line)
+                    for i in range(len(line)):
+                        x, y = line[i]
+                        px = int((x - geo_transform[0]) / geo_transform[1])
+                        py = int((y - geo_transform[3]) / geo_transform[5])
+                        value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
+                        values.append({self.field_chosen():feature.GetField(self.field_chosen()),
+                                    "val": float(value)})
+            except:
+                pass
             result_df = pd.DataFrame(values)
-            df = groupby_agg(df = result_df, group_cols = self.field_chosen(), value_col = "val", funcs = stat_name)
+            df = groupby_agg(df = result_df, group_cols = self.field_chosen(), 
+                             value_col = "val", funcs = stat_name)
             return df
 
    # MULTI RASTER AND LINE STATS
@@ -612,23 +625,25 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
                     Unoverlable()
                     return
             # loop through tif files in folder
-                for feature in layer:
-                    ID = feature.GetField(self.field_chosen())
-                    geom = feature.GetGeometryRef()
-                    geom.Transform(transform)
-                    line = np.array(geom.GetPoints())
-                    for i in range(len(line)):
-                        x, y = line[i]
-                        px = int((x - geo_transform[0]) / geo_transform[1])
-                        py = int((y - geo_transform[3]) / geo_transform[5])
-                        value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
-                        #print(value)
-                        #stats = [{"mean": value.mean(), "max":value.min()}]
-                        values.append({"source":name, self.field_chosen():ID, "values": value})
+                try:
+                    for feature in layer:
+                        ID = feature.GetField(self.field_chosen())
+                        geom = feature.GetGeometryRef()
+                        geom.Transform(transform)
+                        line = np.array(geom.GetPoints())
+                        for i in range(len(line)):
+                            x, y = line[i]
+                            px = int((x - geo_transform[0]) / geo_transform[1])
+                            py = int((y - geo_transform[3]) / geo_transform[5])
+                            value = raster.GetRasterBand(1).ReadAsArray(px, py, 1, 1)[0][0]
+                            values.append({"source":name, self.field_chosen():ID, "values": value})
+                except:
+                    pass
             self.extraction_progress.setValue(len(tiff_files))  # set progress bar to full
             # Create a Pandas DataFrame to store the extracted values
             result_df = pd.DataFrame(values)
-            df = groupby_agg(df = result_df, group_cols = ["source", self.field_chosen()], value_col = "values", funcs = stat_name)
+            df = groupby_agg(df = result_df, group_cols = ["source", self.field_chosen()], 
+                             value_col = "values", funcs = stat_name)
             global multi_raster_line_stats
             multi_raster_line_stats = df
             return multi_raster_line_stats
@@ -796,7 +811,7 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             #global vector_path
             vector_path = PathToVectorFile.filePath()
             
-            if vector_path.endswith("csv") or vector_path.endswith("txt"):
+            if vector_path.endswith("csv") and self.VectorType.currentText() == "Point":
                # To use the dialog, instantiate and show it
                try:
                    dialog = Delim(file_path=vector_path)
@@ -868,8 +883,4 @@ class ExtractorDialog(QtWidgets.QDialog, FORM_CLASS):
             pass
     
             
-
-
-
-
 #####################

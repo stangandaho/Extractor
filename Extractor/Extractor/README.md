@@ -1,6 +1,0 @@
-# Extractor
-Extractor QGIS plugin provides a valuable tool for extracting data from raster layers using point, line, and polygon vector features. By incorporating zonal statistics calculations, the plugin allows users to perform complex spatial analyses and generate informative output.
-
-One important application of this plugin is in time series analysis, where users may need to extract data from multiple raster layers to track changes over time. For example, researchers studying changes in land use patterns may use your plugin to extract data on vegetation cover, urbanization, or other variables of interest at different time points, and then analyze and compare these data to identify trends and patterns.
-
-Another important application of this plugin is in landscape studies, where users may need to extract data on environmental variables such as elevation, slope, or soil properties from raster layers, and then analyze these data to understand patterns of biodiversity, ecosystem function, or other landscape-scale processes. With the ability to extract data from multiple raster layers using point, line, and polygon features, **Extractor** provides a powerful tool for conducting these types of analyses.
