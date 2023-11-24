@@ -1,0 +1,66 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Extractor
+qgisMinimumVersion=3.14.0
+description=Extractor allows for the extraction of data from raster images based on point, line, and polygon vectors and the application of zonal statistics. Its usefulness lies in its ability to work with a range of raster sources, making it ideal for time series analysis and landscape studies.
+version=1.2
+author=Stanislas Mahussi GANDAHO
+email=gandahostanmah@gmail.com
+
+about= The Extractor QGIS plugin is a tool for extracting data from raster layers using vector features like points, lines, and polygons. It's invaluable for complex spatial analyses, especially in time series studies, allowing extraction from multiple layers to track changes over time. It can be used to analyze land use shifts by extracting vegetation cover, urbanization, etc., across different time points. It's also vital in landscape studies, extracting environmental variables (elevation, slope, etc.) to understand biodiversity patterns and ecosystem functions.
+
+
+tracker=https://github.com/stangandaho/Extractor/issues
+repository=https://github.com/stangandaho/Extractor
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+
+changelog=
+
+        1.2
+        - Update table view for all seperators change
+        - Handle error for raster and vector crs unmacthed
+        - Add icon and font to dialogs
+
+        1.2
+        - Add feature for extraction with point from csv file
+
+        1.1
+        - Some bugs fixed and tooltip added
+
+        1.0
+        - Fix Extraction process during data saving
+
+        0.21.1
+        - Add kmz/KMZ, kml/KML support
+
+# Tags are comma separated with spaces allowed
+tags=analysis, csv, ecology, layers, line, point, polygon, shapefile, statistics, table, vector, time series
+
+homepage=https://github.com/stangandaho/Extractor/
+category= Raster & Vector
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
